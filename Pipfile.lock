@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "6a2f277d48773362ac79dd31ba19fd217424fad3228a98faf08c8d3a3f2e3d73"
+            "sha256": "41beace03fae3108505cd762bfd165368304620deaabe62476a25eb4885fe899"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -51,6 +51,14 @@
                 "sha256:c20fdd83a5dbc0af9efd622bee9a5564e278f6380fffcacc43ba6f43db2813b0"
             ],
             "version": "==1.8.1"
+        },
+        "pyhamcrest": {
+            "hashes": [
+                "sha256:36cda5e849e3ee9ce54628667471e5e769f596259bb3c13c3596f6059a615ef8",
+                "sha256:5959cb4ab465b303522d2e0d270a6ee581c3ad9ba419e304bb6ebe50a60ea37a"
+            ],
+            "index": "pypi",
+            "version": "==2.0.0"
         },
         "pyparsing": {
             "hashes": [
