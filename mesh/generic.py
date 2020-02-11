@@ -1,5 +1,8 @@
 from typing import Dict
 
+from rx import operators as ops
+from rx.subject import Subject
+
 from utils.space import Position
 
 
@@ -32,11 +35,21 @@ class GenericNode:
         self.position = position
         self.rssi = rssi
 
+        self.subject = Subject()
+
+        self.subject.pipe(
+            ops.delay(5)
+        ).subscribe(self.send, on_error=self.emmit_error)
+
     def send(self, message: GenericMessage):
-        raise NotImplementedError()
+        print("LOLOLO")
+
+    @staticmethod
+    def emmit_error(err):
+        print("Got error: %s" % err)
 
     def receive(self, message: GenericMessage):
-        raise NotImplementedError()
+        self.subject.on_next(message)
 
     def __hash__(self):
         return hash(self.position)
