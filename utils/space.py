@@ -1,5 +1,5 @@
 class Position:
-
+    """Representation of physical position in 3D space"""
     def __init__(self, x: int, y: int, z: int):
         self.x = x
         self.y = y
