@@ -23,6 +23,7 @@ jobs:
       run: |
         pip install pipenv
         pipenv install --dev
+        pipenv shell
         pip install flake8
     - name: Lint with flake8
       run: |
@@ -32,5 +33,5 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest
+        pytest test/*
 
