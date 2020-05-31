@@ -23,7 +23,8 @@ jobs:
       run: |
         pip install pipenv
         pipenv install --dev
-        pipenv shell
+        export VENV_HOME_DIR=$(pipenv --venv)
+        source $VENV_HOME_DIR/bin/activate
         pip install flake8
     - name: Lint with flake8
       run: |
