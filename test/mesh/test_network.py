@@ -1,3 +1,5 @@
+from typing import Optional
+
 import pytest
 
 from mesh.generic import GenericNode, Network, GenericMessage
@@ -42,3 +44,22 @@ def test_network_is_subscribable(network: Network, rand_pos: Position):
     network.subscribe(on_message_received)
     network.on_next(expected_message)
     assert expected_message == received_message
+
+
+def test_network_will_pass_message_to_another_node(network: Network):
+    origin_node = GenericNode(Position(0, 0, 0))
+    test_node = GenericNode(Position(3, 2, 1))
+    test_node._send_messages = False
+    network.add_node(origin_node)
+    network.add_node(test_node)
+    received_message: Optional[GenericMessage] = None
+
+    def on_message_received(_message):
+        nonlocal received_message
+        received_message = _message
+
+    test_node.subscribe(on_next=on_message_received)
+    origin_node.send(GenericMessage(data="test_data"))
+
+    assert received_message
+    assert received_message.data == "test_data"
