@@ -1,5 +1,5 @@
 import copy
-from typing import Dict, Set, Union, Any
+from typing import Dict, Union, Any
 
 from rx import Observable
 from rx.subject import Subject
@@ -50,7 +50,7 @@ class GenericNode(Loggable):
         super(GenericNode, self).__init__()
         assert -100 <= rssi <= -50, f"rssi should be in [-100, -50 ] range, but {rssi=} given"
 
-        self.network: Union[Network, None] = None
+        self.network: Union[Subject, None] = None
         self.position = position
         self.rssi = rssi
         self.id = self.__get_next_serial()
@@ -81,9 +81,9 @@ class GenericNode(Loggable):
             if self.network:
                 self.network.on_next(new_message)
             else:
-                self.logger.warning(f"Network is not defined for node: {self}")
+                self.logger.warning(f"[{self}]Network is not defined for node: {self}")
         else:
-            self.logger.info("Message sending turned off for this node")
+            self.logger.info(f"[{self}]Message sending turned off for this node")
 
     def on_next(self, message: GenericMessage):
         """Access point for messages incoming from network"""
@@ -107,36 +107,3 @@ class GenericNode(Loggable):
 
     def __eq__(self, other):
         return self.id == other.id
-
-
-class Network(Loggable, Subject):
-    """
-    Holder for mesh network
-    """
-
-    def __init__(self):
-        self.nodes: Set[GenericNode] = set()
-        super().__init__()
-        self.subscribe(self._packet_received_from_node)
-
-    def on_next(self, value: GenericMessage) -> None:
-        super(Network, self).on_next(value)
-
-    def add_node(self, node: GenericNode) -> None:
-        assert node not in self.nodes, "Node already added to Network"
-        node.network = self
-        self.nodes.add(node)
-
-    def _packet_received_from_node(self, message: GenericMessage) -> None:
-        self.logger.info(f"[{self}] Message received: {message}")
-        for node in self.nodes:
-            self.logger.debug(f"[{self}] Node : {node}")
-            if node != message.origin:
-                self.logger.debug(f"[{self}] Message is send to this node")
-                node.on_next(message)
-            else:
-
-                self.logger.debug(f"[{self}] Message is NOT send to this node")
-
-    def __str__(self):
-        return f"{self.__class__.__name__}"

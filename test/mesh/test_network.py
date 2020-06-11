@@ -2,7 +2,8 @@ from typing import Optional
 
 import pytest
 
-from mesh.generic import GenericNode, Network, GenericMessage
+from mesh.generic import GenericNode, GenericMessage
+from mesh.network import Network
 from utils.space import Position
 
 
@@ -14,7 +15,7 @@ def rand_pos() -> Position:
 
 @pytest.fixture
 def network():
-    from mesh.generic import Network
+    from mesh.network import Network
     return Network()
 
 
