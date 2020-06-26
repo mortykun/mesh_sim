@@ -59,8 +59,8 @@ def test_network_will_pass_message_to_another_node(network: Network):
         nonlocal received_message
         received_message = _message
 
-    test_node.subscribe(on_next=on_message_received)
-    origin_node.send(GenericMessage(data="test_data"))
+    test_node.incoming_message_queue.subscribe(on_next=on_message_received)
+    origin_node.send_to_network(GenericMessage(data="test_data"))
 
     assert received_message
     assert received_message.data == "test_data"

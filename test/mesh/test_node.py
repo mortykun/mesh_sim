@@ -3,6 +3,7 @@ from rx.subject import Subject
 from typing import Optional
 
 from mesh.generic import GenericNode, GenericMessage
+from mesh.node import NodeWithCache
 from utils.space import Position
 
 
@@ -32,7 +33,7 @@ def test_node_is_subscribable(rand_pos):
 
 def test_node_is_subscribable_via_network(rand_pos):
     sent_message = GenericMessage("some")
-    received_message = None
+    received_message: GenericMessage = None
 
     def save_message(packet):
         nonlocal received_message
@@ -41,7 +42,7 @@ def test_node_is_subscribable_via_network(rand_pos):
     node = GenericNode(rand_pos)
     node.subscribe(save_message)
     node.on_next(sent_message)
-    assert received_message == sent_message
+    assert received_message.data == sent_message.data
 
 
 def test_message_origin_is_correct():
@@ -59,3 +60,37 @@ def test_message_origin_is_correct():
     test_message.origin = origin_node
     test_node.on_next(test_message)
     assert received_message.origin == origin_node
+
+
+def test_node_with_cache_can_receive_first_message():
+    test_node = NodeWithCache(Position(0, 0, 0))
+    dummy_node = GenericNode(Position(1, 1, 1))
+    received_message = None
+
+    def save_message(packet):
+        nonlocal received_message
+        received_message = packet
+
+    test_node.subscribe(lambda m: print(f"FOOO:{m}"))
+    test_node.subscribe(save_message)
+    message = GenericMessage("data")
+    message.origin = dummy_node
+    test_node.on_next(message)
+    assert received_message == message
+
+
+def test_node_with_cache_will_drop_second_message():
+    test_node = NodeWithCache(Position(0, 0, 0))
+    received_message = None
+
+    def save_message(packet):
+        nonlocal received_message
+        received_message = packet
+
+    test_node.subscribe(save_message)
+    message = GenericMessage("data")
+    message.origin = test_node
+    test_node.on_next(message)
+    received_message = None
+    test_node.on_next(message)
+    assert received_message is None

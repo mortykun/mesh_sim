@@ -39,7 +39,6 @@ class Network(Loggable, Subject):
         self.logger.debug(f"[{self}] Message is send to {target_node}")
         for m in self.monitors:
             m.save_action(message, target_node)
-            print(m._history)
         target_node.on_next(message)
 
     def __str__(self):
@@ -51,3 +50,12 @@ class Network(Loggable, Subject):
     def delete_monitor(self, network_monitor):
         self.monitors.remove(network_monitor)
 
+    def get_nodes_map(self):
+        x = []
+        y = []
+        z = []
+        for n in self.nodes:
+            x.append(n.position.x)
+            y.append(n.position.y)
+            z.append(n.position.z)
+        return x, y, z

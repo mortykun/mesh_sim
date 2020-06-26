@@ -38,7 +38,7 @@ def test_network_history_is_saved_for_single_message(network_monitor: NetworkMon
     network.add_node(test_node)
     network.register_monitor(network_monitor)
 
-    origin_node.send(GenericMessage("message"))
+    origin_node.send_to_network(GenericMessage("message"))
     assert len(network_monitor) != 0
     assert network_monitor[0].message.data == "message"
     assert network_monitor[0]

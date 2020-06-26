@@ -5,6 +5,12 @@ name = "pypi"
 
 [packages]
 rx = "*"
+numpy = "*"
+matplotlib = "*"
+networkx = "*"
+pandas = "*"
+holoviews = "*"
+netcdf4 = "*"
 
 [dev-packages]
 pytest = "*"
