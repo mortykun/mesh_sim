@@ -1,16 +1,17 @@
 from time import time
 from typing import NamedTuple, List
 
-from mesh.generic import GenericMessage, GenericNode
+from mesh.message import GenericMessageEvent
+from mesh.node import MeshNode
 from utils.space import Position
 from view.plot import Line
 
 
 class NetworkAction(NamedTuple):
     timestamp: int
-    message: GenericMessage
-    origin: GenericNode
-    destination: GenericNode
+    message: GenericMessageEvent
+    origin: MeshNode
+    destination: MeshNode
 
 
 class NetworkMonitor:
@@ -21,7 +22,7 @@ class NetworkMonitor:
     def __init__(self):
         self._history: List[NetworkAction] = []
 
-    def save_action(self, action: GenericMessage, destination: GenericNode):
+    def save_action(self, action: GenericMessageEvent, destination: MeshNode):
         self._history.append(NetworkAction(int(time()), action, action.origin, destination))
 
     def __getitem__(self, item) -> NetworkAction:
