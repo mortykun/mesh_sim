@@ -28,7 +28,7 @@ network.add_node(target_node)
 points = network.get_nodes_map()
 
 network.start()
-time.sleep(1)
+# time.sleep(1)
 network.stop()
 Plot.plot_points(*points)
 lines = monitor.get_messages_lines()
