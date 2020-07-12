@@ -58,7 +58,7 @@ class MeshNode(Loggable):
                 await asyncio.sleep(int(random()*20))
                 self.logger.info(f"Message is being send from node_{self.address}")
 
-                await self.send_to_network(client, GenericMessageOutgoingEvent("trololo"))
+                await self.send_to_network(client, GenericMessageOutgoingEvent("message#"))
             self.logger.info(f"Node_{self.address} killed")
 
     async def connect_to_network(self, client):
@@ -87,10 +87,9 @@ class MeshNode(Loggable):
         if not self.network:
             raise EnvironmentError(f"[{self}]Network is not defined for node: {self}")
         message = self.prepare_message_to_be_send(message)
-            if self.can_send_message_to_network(message):
-                self.logger.warning(f"[{self}]Sending message [{message}] to Network")
-                await client.broadcast(message)
-
+        if self.can_send_message_to_network(message):
+            self.logger.warning(f"[{self}]Sending message [{message}] to Network")
+            await client.broadcast(message)
 
     def start_single(self):
         loop = asyncio.get_event_loop()

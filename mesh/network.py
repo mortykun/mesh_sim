@@ -35,7 +35,6 @@ class Network(Loggable):
             server.subscribe(GenericMessageOutgoingEvent, lambda event: self.send_to_all_nodes(server, event))
             self.logger.info("Network subscribed to all messages")
             while not self.kill_switch:
-                # self.logger.info("Network tick")
                 await asyncio.sleep(0)
             self.logger.info("Network turned off")
 

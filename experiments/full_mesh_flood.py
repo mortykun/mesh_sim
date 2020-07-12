@@ -20,7 +20,7 @@ monitor = NetworkMonitor()
 network.register_monitor(monitor)
 
 network.add_node(origin_node)
-for i in range(1, 2):
+for i in range(1, 100):
     network.add_node(NodeWithCache(Position(i, random.randint(1, 99), random.randint(1, 99))))
 
 target_node = NodeWithCache(Position(100, 100, 100))
@@ -30,6 +30,7 @@ points = network.get_nodes_map()
 network.start()
 time.sleep(1)
 network.stop()
-# Plot.plot_points(*points)
-# lines = monitor.get_messages_lines()
-# Plot.plot_lines(lines)
+Plot.plot_points(*points)
+lines = monitor.get_messages_lines()
+Plot.plot_lines(lines)
+input()
