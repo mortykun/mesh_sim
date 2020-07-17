@@ -21,7 +21,8 @@ class Network(Loggable):
         self.nodes: Set[MeshNode] = set()
         self.processes: List[Process] = []
 
-        self.kill_switch: bool = False
+        self.kill_switch: multiprocessing.Value[int] = multiprocessing.Value("i", 0)
+        self.network_process = None
         super().__init__()
 
     def add_node(self, node: MeshNode) -> None:
@@ -34,7 +35,7 @@ class Network(Loggable):
             self.logger.info("Network started")
             server.subscribe(GenericMessageOutgoingEvent, lambda event: self.send_to_all_nodes(server, event))
             self.logger.info("Network subscribed to all messages")
-            while not self.kill_switch:
+            while not self.kill_switch.value:
                 await asyncio.sleep(0)
             self.logger.info("Network turned off")
 
@@ -71,17 +72,23 @@ class Network(Loggable):
     def start(self):
         # multiprocessing.set_start_method("spawn")
         p_net = multiprocessing.Process(target=self.start_bare_network)
-        self.processes.append(p_net)
+        self.network_process = p_net
 
         for node in self.nodes:
             _p_node = multiprocessing.Process(target=node.start_single)
             self.processes.append(_p_node)
 
+        self.network_process.start()
         for p in self.processes:
             p.start()
 
     def stop(self):
-        self.kill_switch = True
         for n in self.nodes:
-            n.kill_switch = True
+            n.kill_switch.value = 1
+        for p in self.processes:
+            p.join()
+
+        self.kill_switch.value = 1
+        self.network_process.join()
+
 

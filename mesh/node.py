@@ -1,6 +1,8 @@
 import asyncio
 from collections import defaultdict
+from multiprocessing import Value
 from random import random
+from time import time
 
 from lahja import ConnectionConfig, AsyncioEndpoint, EndpointAPI
 
@@ -38,7 +40,7 @@ class MeshNode(Loggable):
         self._seq = 1
 
         self.bus_config = ConnectionConfig.from_name("network")
-        self.kill_switch: bool = False
+        self.kill_switch: Value[int] = Value("i", 0)
 
     @property
     def next_seq(self):
@@ -54,12 +56,19 @@ class MeshNode(Loggable):
     async def run(self):
         async with AsyncioEndpoint(f"node_{self.address}").run() as client:
             await self.connect_to_network(client)
-            while not self.kill_switch:
-                await asyncio.sleep(int(random()*20))
-                self.logger.info(f"Message is being send from node_{self.address}")
 
-                await self.send_to_network(client, GenericMessageOutgoingEvent("message#"))
+            while not self.kill_switch.value:
+                self.logger.critical(f"[{self}] Kill_switch state: {self.kill_switch.value}")
+                await self.main_message_tick(client)
             self.logger.info(f"Node_{self.address} killed")
+
+    async def main_message_tick(self, client):
+        timeout = int(random() * 20)
+        last_message_emited = time()
+        while time() - last_message_emited < timeout:
+            await asyncio.sleep(0.1)
+        self.logger.info(f"Message is being send from node_{self.address}")
+        await self.send_to_network(client, GenericMessageOutgoingEvent("message#"))
 
     async def connect_to_network(self, client):
         self.logger.info("Node started!")
@@ -71,6 +80,10 @@ class MeshNode(Loggable):
 
     def handle_received_message(self, message: GenericMessageEvent):
         self.logger.info(f"Node_{self.address} received: {message}")
+        if self.network:
+            if self.network.monitors:
+                for m in self.network.monitors:
+                    m.save_action(message, self)
 
     def prepare_message_to_be_send(self, message: GenericMessageEvent) -> GenericMessageEvent:
         message.origin = self.address

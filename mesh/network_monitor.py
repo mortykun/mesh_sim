@@ -1,3 +1,4 @@
+import logging
 from time import time
 from typing import NamedTuple, List
 
@@ -23,7 +24,9 @@ class NetworkMonitor:
         self._history: List[NetworkAction] = []
 
     def save_action(self, action: GenericMessageEvent, destination: MeshNode):
-        self._history.append(NetworkAction(int(time()), action, action.origin, destination))
+        to_save = NetworkAction(int(time()), action, action.origin, destination)
+        logging.info(f"Saved to history: {to_save}")
+        self._history.append(to_save)
 
     def __getitem__(self, item) -> NetworkAction:
         return self._history[item]
