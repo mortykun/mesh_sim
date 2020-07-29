@@ -5,19 +5,18 @@ from typing import Set, List
 
 from lahja import AsyncioEndpoint, ConnectionConfig
 
-from mesh.message import GenericMessageEvent, GenericMessageOutgoingEvent
-from mesh.node import MeshNode
-from mesh.network_monitor import NetworkMonitor
+from mesh.common import BusConnected
+from mesh.message import GenericMessageEvent, GenericMessageOutgoingEvent, GenericMessageReceivedReport
+from mesh.node_implementation import MeshNode
 from utils.log import Loggable
 
 
-class Network(Loggable):
+class Network(BusConnected, Loggable):
     """
     Holder for mesh network
     """
 
-    def __init__(self):
-        self.monitors: List[NetworkMonitor] = []
+    def __init__(self, ):
         self.nodes: Set[MeshNode] = set()
         self.processes: List[Process] = []
 
@@ -30,34 +29,32 @@ class Network(Loggable):
         node.network = self
         self.nodes.add(node)
 
-    async def run_network(self):
-        async with AsyncioEndpoint.serve(ConnectionConfig.from_name("network")) as server:
+    async def run_network(self, network_history):
+        async with AsyncioEndpoint.serve(ConnectionConfig.from_name("network")) as self.network_bus:
             self.logger.info("Network started")
-            server.subscribe(GenericMessageOutgoingEvent, lambda event: self.send_to_all_nodes(server, event))
+            self.network_bus.subscribe(GenericMessageOutgoingEvent, self.send_to_all_nodes)
+            self.network_bus.subscribe(GenericMessageReceivedReport, self.notify_monitor(network_history))
             self.logger.info("Network subscribed to all messages")
             while not self.kill_switch.value:
                 await asyncio.sleep(0)
             self.logger.info("Network turned off")
 
-    def send_to_all_nodes(self, active_endpoint: AsyncioEndpoint, message: GenericMessageEvent):
-        self.logger.info(f"{message.origin}")
+    def send_to_all_nodes(self, message: GenericMessageEvent):
         self.logger.info(f"Network received : {message}")
+        self.network_bus.broadcast_nowait(message.copy(new_message_type=GenericMessageEvent))
 
-        active_endpoint.broadcast_nowait(message.copy(new_message_type=GenericMessageEvent))
-
-    def start_bare_network(self):
+    def start_bare_network(self, network_history):
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.run_network())
+        loop.run_until_complete(self.run_network(network_history=network_history))
 
     def __str__(self):
         return f"{self.__class__.__name__}"
 
-    def register_monitor(self, network_monitor: NetworkMonitor):
-        self.monitors.append(network_monitor)
-        # FixMe - add network monitor observer for all events :3
-
-    def delete_monitor(self, network_monitor):
-        self.monitors.remove(network_monitor)
+    @staticmethod
+    def notify_monitor(history_handler: List):
+        def _notify(message: GenericMessageReceivedReport):
+            history_handler.append(message)
+        return _notify
 
     def get_nodes_map(self):
         x = []
@@ -69,9 +66,9 @@ class Network(Loggable):
             z.append(n.position.z)
         return x, y, z
 
-    def start(self):
-        # multiprocessing.set_start_method("spawn")
-        p_net = multiprocessing.Process(target=self.start_bare_network)
+    def start(self, network_history):
+        p_net = multiprocessing.Process(target=self.start_bare_network, args=(network_history,))
+        p_net.daemon = False
         self.network_process = p_net
 
         for node in self.nodes:
@@ -90,5 +87,3 @@ class Network(Loggable):
 
         self.kill_switch.value = 1
         self.network_process.join()
-
-
