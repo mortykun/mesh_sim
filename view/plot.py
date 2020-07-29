@@ -6,14 +6,14 @@ import matplotlib.pyplot as plt
 
 class Line:
     def __init__(self, x, y, z):
-        self.alpha = 0.005
+        self.alpha = 0.01
         self.color = 'black'
         self.x = x
         self.y = y
         self.z = z
 
 
-class property_ax(type):
+class PropertyAx(type):
     def __init__(cls, *args, **kwargs):
         super().__init__(*args, **kwargs)
         cls._ax = None
@@ -25,7 +25,7 @@ class property_ax(type):
         return cls._ax
 
 
-class Plot(metaclass=property_ax):
+class Plot(metaclass=PropertyAx):
 
     @classmethod
     def plot_points(cls, x, y, z, **kwargs):
