@@ -9,7 +9,7 @@ import time
 from multiprocessing import Manager
 
 from mesh.network import Network
-from mesh.network_monitor import get_messages_lines
+from mesh.network_monitor import get_messages_lines, dump_history
 from mesh.node_implementation import NodeWithPositionCache
 from utils.space import Position
 from view.plot import Plot
@@ -27,10 +27,11 @@ target_node = NodeWithPositionCache(Position(10, 10, 10))
 network.add_node(target_node)
 points = network.get_nodes_map()
 network.start(history)
-time.sleep(120)
+time.sleep(12)
 network.stop()
 print(history)
 
 Plot.plot_points(*points)
 Plot.plot_lines(get_messages_lines(history))
+dump_history(history)
 input("STOP")

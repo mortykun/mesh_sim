@@ -32,7 +32,7 @@ class MeshNode(MeshNodeAsync):
     async def main_message_tick(self):
         if time() - self.last_message_emitted > self.timeout:
             self.last_message_emitted = time()
-            self.logger.info(f"Message is being send from node_{self._id}")
+            self.logger.debug(f"Message is being send from node_{self._id}")
             await self.send_to_network(self.network_bus, GenericMessageOutgoingEvent(f"message#{self.next_seq}"))
         else:
             await asyncio.sleep(1)
