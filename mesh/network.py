@@ -7,8 +7,9 @@ from lahja import AsyncioEndpoint, ConnectionConfig
 
 from mesh.common import BusConnected
 from mesh.message import GenericMessageEvent, GenericMessageOutgoingEvent, GenericMessageReceivedReport
-from mesh.node_implementation import MeshNode
+from mesh.node import MeshNodeAsync
 from utils.log import Loggable
+from utils.space import Position
 
 
 class Network(BusConnected, Loggable):
@@ -16,15 +17,16 @@ class Network(BusConnected, Loggable):
     Holder for mesh network
     """
 
-    def __init__(self, ):
-        self.nodes: Set[MeshNode] = set()
+    def __init__(self, node_range):
+        self.nodes: Set[MeshNodeAsync] = set()
         self.processes: List[Process] = []
 
         self.kill_switch: multiprocessing.Value[int] = multiprocessing.Value("i", 0)
         self.network_process = None
+        self.range = node_range
         super().__init__()
 
-    def add_node(self, node: MeshNode) -> None:
+    def add_node(self, node: MeshNodeAsync) -> None:
         assert node not in self.nodes, f"[{self}] Node already added to Network"
         node.network = self
         self.nodes.add(node)
@@ -56,15 +58,23 @@ class Network(BusConnected, Loggable):
             history_handler.append(message)
         return _notify
 
+    def did_i_hear_this_message(self, origin_node: Position, destination_node: Position) -> bool:
+        """
+        :param origin_node: ADDR of node that 'physically' send message
+        :param destination_node: ADDR of node that 'physically' recived message
+        :return:
+        """
+        is_reachable = abs(origin_node - destination_node) < self.range
+        self.logger.debug(f"Message reached ? [{is_reachable}]")
+        return is_reachable
+
     def get_nodes_map(self):
         x = []
         y = []
-        z = []
         for n in self.nodes:
             x.append(n.position.x)
             y.append(n.position.y)
-            z.append(n.position.z)
-        return x, y, z
+        return x, y
 
     def start(self, network_history):
         p_net = multiprocessing.Process(target=self.start_bare_network, args=(network_history,))

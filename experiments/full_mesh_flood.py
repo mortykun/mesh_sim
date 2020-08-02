@@ -16,20 +16,19 @@ from view.plot import Plot
 
 manager = Manager()
 history = manager.list()
-origin_node = NodeWithPositionCache(Position(0, 0, 0))
-network = Network()
+network = Network(20)
 
-network.add_node(origin_node)
-for i in range(1, 10):
-    network.add_node(NodeWithPositionCache(Position(i, random.randint(1, 9), random.randint(1, 9))))
+network.add_node(NodeWithPositionCache(Position(0, 0), addr=0, send_schedule=[(3, 100)]))
+network.add_node(NodeWithPositionCache(Position(100, 100), addr=100))
 
-target_node = NodeWithPositionCache(Position(10, 10, 10))
-network.add_node(target_node)
+for i in range(1, 100):
+    network.add_node(NodeWithPositionCache(Position(i, random.randint(1, 99))))
+
 points = network.get_nodes_map()
 network.start(history)
-time.sleep(12)
+time.sleep(30)
 network.stop()
-print(history)
+# print(history)
 
 Plot.plot_points(*points)
 Plot.plot_lines(get_messages_lines(history))
