@@ -1,5 +1,6 @@
 import enum
 import logging
+from collections import defaultdict
 from typing import List, Tuple, Dict
 from matplotlib import pyplot as plt
 import numpy as np
@@ -11,7 +12,7 @@ from mesh.message import GenericMessageReceivedReport
 
 class Line:
     def __init__(self, x, y):
-        self.alpha = 0.01
+        self.alpha = 0.02
         self.color = 'black'
         self.x = x
         self.y = y
@@ -20,6 +21,7 @@ class Line:
 class MeshPlotMode(enum.Enum):
     ALL_MESSAGES = 1
     ONLY_FIRST = 2
+    BAR_RECEIVED = 3
 
 
 class Plot:
@@ -32,19 +34,28 @@ class Plot:
             "sharey": sharey
         })
 
-    def draw(self, plot: Tuple, mode: MeshPlotMode, network, history):
-        ax = self.ax[plot]
-        self.plot_points(ax, *network.get_nodes_map())
+    def draw(self, plot: Tuple, mode: MeshPlotMode, network):
+        ax: Axes = self.ax[plot]
         if mode is MeshPlotMode.ALL_MESSAGES:
-            self.plot_lines(ax, self.get_messages_lines(history))
+            self.plot_points(ax, *network.get_nodes_map())
+            self.plot_lines(ax, self.get_messages_lines(network.network_history))
         elif mode is MeshPlotMode.ONLY_FIRST:
-            self.plot_lines(ax, self.get_messages_lines(history, only_first=True), alpha=0.3)
+            self.plot_points(ax, *network.get_nodes_map())
+            self.plot_lines(ax, self.get_messages_lines(network.network_history, only_first=True), alpha=0.3)
+        elif mode is MeshPlotMode.BAR_RECEIVED:
+            self.plot_bars(ax, *self.get_bar_received(network.network_history))
         else:
             raise ValueError(f"Only `ALL_MESSAGES` or `ONLY_FIRST` are supported modes")
 
     @staticmethod
-    def plot_points(ax: Axes, x, y, **kwargs):
+    def plot_bars(ax, addressees, heights):
+        ax.bar(addressees, heights, tick_label=[f"_{v}" for v in addressees])
+
+    @staticmethod
+    def plot_points(ax: Axes, x, y, names, **kwargs):
         ax.scatter(x, y, cmap='Greens')
+        for i, txt in enumerate(names):
+            ax.annotate(txt, (x[i], y[i]))
         plt.show(block=False)
 
     def plot_lines(self, ax: Axes, lines: List[Line], alpha=None):
@@ -58,6 +69,15 @@ class Plot:
             else:
                 current_alpha = line_cache[line_key].get_alpha()
                 line_cache[line_key].set_alpha(current_alpha + line.alpha)
+
+    @staticmethod
+    def get_bar_received(history: List[GenericMessageReceivedReport]):
+        count = defaultdict(int)
+
+        for entry in history:
+            count[entry.reporter] += 1
+
+        return zip(*count.items())
 
     @staticmethod
     def add_arrow(line: Line2D, position=None, size=15, color=None):

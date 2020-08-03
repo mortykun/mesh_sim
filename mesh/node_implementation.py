@@ -40,10 +40,10 @@ class NodeWithPositionCache(MeshNodeAsync):
     def should_process_message(self, message: GenericMessageEvent) -> bool:
         if message.data.src == self.addr:
             return False
-        self.logger.warn(f"[{self}] Message received: {message}")
+        self.logger.debug(f"[{self}] Message received: {message}")
         if message.data.src in self._cache:
             if message.data.seq in self._cache[message.data.src]:
-                self.logger.info(f"[{self}] RPL triggered - Message will be DROPPED: {message}")
+                self.logger.debug(f"[{self}] RPL triggered - Message will be DROPPED: {message}")
                 return False
         self._cache[message.data.src].append(message.data.seq)
         self.logger.info(f"[{self}]Message will be processed: {message}")

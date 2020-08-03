@@ -2,7 +2,7 @@ import asyncio
 import time
 from abc import ABCMeta, abstractmethod
 from multiprocessing import Value
-from typing import Set, Optional
+from typing import Set, Optional, Dict, List
 
 from lahja import ConnectionConfig, AsyncioEndpoint, EndpointAPI
 
@@ -16,7 +16,9 @@ class MeshNodeAsync(BusConnected, Loggable, metaclass=ABCMeta):
     ASSIGNED_ADDRESSES: Set[int] = set()
     INITIAL_ENDPOINT: ConnectionConfig = None
     ADDR_MIN = 0
-    ADDR_MAX = 100
+    ADDR_MAX = 1000
+
+    nodes_history: Dict[int, List[GenericMessageEvent]]
 
     def __init__(self, position: Position, addr=None):
         """
@@ -32,6 +34,7 @@ class MeshNodeAsync(BusConnected, Loggable, metaclass=ABCMeta):
         self.bus_config = ConnectionConfig.from_name("network")
 
         self.kill_switch: Value = Value("i", 0)
+        self.nodes_history = {}
 
     @abstractmethod
     def prepare_message_to_be_send(self, message: GenericMessageEvent) -> GenericMessageEvent:
@@ -62,7 +65,9 @@ class MeshNodeAsync(BusConnected, Loggable, metaclass=ABCMeta):
         """ Check message if it should be processed or dropped"""
         raise NotImplementedError
 
-    async def run(self):
+    async def run(self, nodes_history):
+        self.nodes_history = nodes_history
+        self.nodes_history[self.addr] = []
         async with AsyncioEndpoint(f"node_{self.addr}").run() as self.network_bus:
             await self.connect_to_network()
             self.start_time = time.time()
@@ -72,12 +77,16 @@ class MeshNodeAsync(BusConnected, Loggable, metaclass=ABCMeta):
             self.logger.info(f"Node_{self.addr} killed")
         self.network_bus = None
 
-    async def emit_event_to_save(self, message: GenericMessageEvent, accepted: bool):
+    async def save_event(self, message: GenericMessageEvent, accepted: bool):
         _message: GenericMessageReceivedReport = message.copy(new_message_type=GenericMessageReceivedReport)
         _message.target_position = self.position
         _message.accepted = accepted
         _message.timestamp = time.time()
-        await self.network_bus.broadcast(_message)
+        _message.reporter = self.addr
+        self.logger.debug(f" Node_{self.addr} is saving event to node history: {_message}")
+        node_history = list(self.nodes_history[self.addr])
+        node_history.append(_message)
+        self.nodes_history[self.addr] = node_history
 
     async def _handle_received_message(self, message: GenericMessageEvent):
         if self.network.did_i_hear_this_message(message.source_position, self.position):
@@ -85,7 +94,7 @@ class MeshNodeAsync(BusConnected, Loggable, metaclass=ABCMeta):
             message_accepted = self.should_process_message(message)
             self.logger.debug(f"Node_{self.addr} received: {message}, "
                               f"{'was accepted' if message_accepted else 'DROPPED'}")
-            await self.emit_event_to_save(message, message_accepted)
+            await self.save_event(message, message_accepted)
             if message_accepted:
                 await self.handle_received_message(message)
 
@@ -119,9 +128,9 @@ class MeshNodeAsync(BusConnected, Loggable, metaclass=ABCMeta):
         message.data.ttl -= 1
         return message
 
-    def start_single(self):
+    def start_single(self, nodes_history):
         loop = asyncio.get_event_loop()
-        return loop.run_until_complete(self.run())
+        return loop.run_until_complete(self.run(nodes_history=nodes_history))
 
     @classmethod
     def _get_free_address(cls, requested_addr: Optional[int] = None):

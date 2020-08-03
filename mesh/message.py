@@ -40,9 +40,11 @@ class GenericMessageOutgoingEvent(GenericMessageEvent):
 
 
 class GenericMessageReceivedReport(GenericMessageEvent):
-    timestamp = None
     target_position = None
+
+    timestamp = None
     accepted = False
+    reporter = None
 
     def __str__(self):
         return super().__str__() + f"[target={self.target_position}]"
