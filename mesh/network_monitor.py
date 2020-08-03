@@ -13,15 +13,6 @@ class NetworkAction:
         action: GenericMessageEvent = action
 
 
-def get_messages_lines(history: List[GenericMessageReceivedReport]):
-    out = list()
-    for entry in history:
-        out.append(Line(
-            [entry.source_position.x, entry.target.x],
-            [entry.source_position.y, entry.target.y]
-        ))
-    return out
-
 
 def dump_history(history: List[GenericMessageReceivedReport]):
     import csv
@@ -40,7 +31,7 @@ def dump_history(history: List[GenericMessageReceivedReport]):
                 entry.timestamp,
                 entry.source_position.x,
                 entry.source_position.y,
-                entry.target.x,
-                entry.target.y,
+                entry.target_position.x,
+                entry.target_position.y,
                 entry.data
             ])

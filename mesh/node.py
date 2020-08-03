@@ -74,7 +74,7 @@ class MeshNodeAsync(BusConnected, Loggable, metaclass=ABCMeta):
 
     async def emit_event_to_save(self, message: GenericMessageEvent, accepted: bool):
         _message: GenericMessageReceivedReport = message.copy(new_message_type=GenericMessageReceivedReport)
-        _message.target = self.position
+        _message.target_position = self.position
         _message.accepted = accepted
         _message.timestamp = time.time()
         await self.network_bus.broadcast(_message)
@@ -111,7 +111,7 @@ class MeshNodeAsync(BusConnected, Loggable, metaclass=ABCMeta):
 
     def set_phy_origin_position(self, message: GenericMessageEvent):
         message.source_position = self.position
-        message.target = None
+        message.target_position = None
         return message
 
     @staticmethod

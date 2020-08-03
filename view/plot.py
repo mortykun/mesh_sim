@@ -1,8 +1,12 @@
+import enum
 import logging
-from typing import List
+from typing import List, Tuple, Dict
 from matplotlib import pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
+
+from mesh.message import GenericMessageReceivedReport
 
 
 class Line:
@@ -13,31 +17,47 @@ class Line:
         self.y = y
 
 
-class PropertyAx(type):
-    def __init__(cls, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        cls._ax = None
-
-    @property
-    def ax(cls):
-        if cls._ax is None:
-            cls._ax = plt.axes(projection='rectilinear')
-        return cls._ax
+class MeshPlotMode(enum.Enum):
+    ALL_MESSAGES = 1
+    ONLY_FIRST = 2
 
 
-class Plot(metaclass=PropertyAx):
+class Plot:
 
-    @classmethod
-    def plot_points(cls, x, y, **kwargs):
-        cls.ax.scatter(x, y, cmap='Greens')
+    def __init__(self, nrows=1, ncols=1, sharex=False, sharey=False):
+        fig, self.ax = plt.subplots(**{
+            "nrows": nrows,
+            "ncols": ncols,
+            "sharex": sharex,
+            "sharey": sharey
+        })
+
+    def draw(self, plot: Tuple, mode: MeshPlotMode, network, history):
+        ax = self.ax[plot]
+        self.plot_points(ax, *network.get_nodes_map())
+        if mode is MeshPlotMode.ALL_MESSAGES:
+            self.plot_lines(ax, self.get_messages_lines(history))
+        elif mode is MeshPlotMode.ONLY_FIRST:
+            self.plot_lines(ax, self.get_messages_lines(history, only_first=True), alpha=0.3)
+        else:
+            raise ValueError(f"Only `ALL_MESSAGES` or `ONLY_FIRST` are supported modes")
+
+    @staticmethod
+    def plot_points(ax: Axes, x, y, **kwargs):
+        ax.scatter(x, y, cmap='Greens')
         plt.show(block=False)
 
-    @classmethod
-    def plot_lines(cls, lines: List[Line]):
-        logging.info(f"Number of mesh messages: {len(lines)}")
+    def plot_lines(self, ax: Axes, lines: List[Line], alpha=None):
+        line_cache: Dict[Tuple, Line2D] = {}
         for line in lines:
-            line, = cls.ax.plot(line.x, line.y, line.color, alpha=line.alpha)
-            cls.add_arrow(line)
+            line_key = (tuple(line.x), tuple(line.y))
+            if line_key not in line_cache.keys():
+                drawn_line, = ax.plot(line.x, line.y, line.color, alpha=alpha if alpha else line.alpha)
+                self.add_arrow(drawn_line)
+                line_cache[line_key] = drawn_line
+            else:
+                current_alpha = line_cache[line_key].get_alpha()
+                line_cache[line_key].set_alpha(current_alpha + line.alpha)
 
     @staticmethod
     def add_arrow(line: Line2D, position=None, size=15, color=None):
@@ -68,3 +88,15 @@ class Plot(metaclass=PropertyAx):
                            arrowprops=dict(arrowstyle="-|>", color=color, alpha=alpha),
                            size=size
                            )
+
+    @staticmethod
+    def get_messages_lines(history: List[GenericMessageReceivedReport], only_first=False):
+        out = list()
+        for entry in history:
+            if only_first and not entry.accepted:
+                continue
+            out.append(Line(
+                [entry.source_position.x, entry.target_position.x],
+                [entry.source_position.y, entry.target_position.y]
+            ))
+        return out

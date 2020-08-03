@@ -41,9 +41,9 @@ class Network(BusConnected, Loggable):
                 await asyncio.sleep(0)
             self.logger.info("Network turned off")
 
-    def send_to_all_nodes(self, message: GenericMessageEvent):
+    async def send_to_all_nodes(self, message: GenericMessageEvent):
         self.logger.info(f"Network received : {message}")
-        self.network_bus.broadcast_nowait(message.copy(new_message_type=GenericMessageEvent))
+        await self.network_bus.broadcast(message.copy(new_message_type=GenericMessageEvent))
 
     def start_bare_network(self, network_history):
         loop = asyncio.get_event_loop()
