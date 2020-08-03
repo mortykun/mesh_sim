@@ -40,6 +40,7 @@ class GenericMessageOutgoingEvent(GenericMessageEvent):
 
 
 class GenericMessageReceivedReport(GenericMessageEvent):
+    timestamp = None
     target_position = None
     accepted = False
 

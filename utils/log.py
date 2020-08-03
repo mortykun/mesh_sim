@@ -25,6 +25,6 @@ class Loggable:
         super().__init__(*args, **kwargs)
         logging.basicConfig(format='%(name)-12s: %(levelname)-8s %(message)s')
         self.logger = logging.getLogger()
-        self.logger.setLevel("WARN")
+        self.logger.setLevel("INFO")
         # self.logger._log = named(self, self.logger._log)
 

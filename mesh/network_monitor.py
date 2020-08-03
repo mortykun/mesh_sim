@@ -28,6 +28,7 @@ def dump_history(history: List[GenericMessageReceivedReport]):
     with open('history.csv', 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow([
+            "timestamp",
             "Source_x",
             "Source_y",
             "target_x",
@@ -36,6 +37,7 @@ def dump_history(history: List[GenericMessageReceivedReport]):
         ])
         for entry in history:
             writer.writerow([
+                entry.timestamp,
                 entry.source_position.x,
                 entry.source_position.y,
                 entry.target.x,

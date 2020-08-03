@@ -76,6 +76,7 @@ class MeshNodeAsync(BusConnected, Loggable, metaclass=ABCMeta):
         _message: GenericMessageReceivedReport = message.copy(new_message_type=GenericMessageReceivedReport)
         _message.target = self.position
         _message.accepted = accepted
+        _message.timestamp = time.time()
         await self.network_bus.broadcast(_message)
 
     async def _handle_received_message(self, message: GenericMessageEvent):
