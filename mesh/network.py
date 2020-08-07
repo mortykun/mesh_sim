@@ -2,13 +2,13 @@ import asyncio
 import multiprocessing
 import time
 from multiprocessing.context import Process
-from typing import Set, List, Any, Dict
+from typing import Set, List, Dict
 
 from lahja import AsyncioEndpoint, ConnectionConfig
 
 from mesh.common import BusConnected
 from mesh.message import GenericMessageEvent, GenericMessageOutgoingEvent, GenericMessageReceivedReport
-from mesh.node import MeshNodeAsync
+from mesh.node.base import MeshNodeAsync
 from utils.log import Loggable
 from utils.space import Position
 

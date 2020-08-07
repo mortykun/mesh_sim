@@ -6,12 +6,14 @@ from matplotlib import pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
+from matplotlib.widgets import Slider
 
 from mesh.message import GenericMessageReceivedReport
 
 
 class Line:
-    def __init__(self, x, y):
+    def __init__(self, timestamp, x, y):
+        self.timestamp = timestamp
         self.alpha = 0.02
         self.color = 'black'
         self.x = x
@@ -25,14 +27,30 @@ class MeshPlotMode(enum.Enum):
 
 
 class Plot:
+    MAX = 100
+    slider_min: Slider = None
+    slider_max: Slider = None
+    timestamp_min: float = float("inf")
+    timestamp_max: float = 0.0
+    line_cache = []
 
     def __init__(self, nrows=1, ncols=1, sharex=False, sharey=False):
-        fig, self.ax = plt.subplots(**{
+        self.fig, self.ax = plt.subplots(**{
             "nrows": nrows,
             "ncols": ncols,
             "sharex": sharex,
             "sharey": sharey
         })
+
+        self.add_slider()
+        plt.show(block=False)
+
+    def add_slider(self):
+        plt.subplots_adjust(bottom=0.2)
+        self.slider_min = Slider(plt.axes([0.15, 0.1, 0.65, 0.03]), 'MIN', 0, 100, valinit=0, valstep=1)
+        self.slider_min.on_changed(self.update_lines)
+        self.slider_max = Slider(plt.axes([0.15, 0.05, 0.65, 0.03]), 'MAX', 0, 100, valinit=100, valstep=1)
+        self.slider_max.on_changed(self.update_lines)
 
     def draw(self, plot: Tuple, mode: MeshPlotMode, network):
         ax: Axes = self.ax[plot]
@@ -59,16 +77,35 @@ class Plot:
         plt.show(block=False)
 
     def plot_lines(self, ax: Axes, lines: List[Line], alpha=None):
-        line_cache: Dict[Tuple, Line2D] = {}
         for line in lines:
             line_key = (tuple(line.x), tuple(line.y))
-            if line_key not in line_cache.keys():
-                drawn_line, = ax.plot(line.x, line.y, line.color, alpha=alpha if alpha else line.alpha)
-                self.add_arrow(drawn_line)
-                line_cache[line_key] = drawn_line
+            drawn_line, = ax.plot(line.x, line.y, line.color, alpha=alpha if alpha else line.alpha)
+            self.add_arrow(drawn_line)
+            self.line_cache.append((line.timestamp, drawn_line, drawn_line.get_alpha()))
+            self.timestamp_min = line.timestamp if line.timestamp < self.timestamp_min else self.timestamp_min
+            self.timestamp_max = line.timestamp if line.timestamp > self.timestamp_max else self.timestamp_max
+        # self.fig.canvas.draw_idle()
+
+    def update_lines(self, _):
+        timestamp_step = (self.timestamp_max - self.timestamp_min) / 100
+        logging.info(f"{timestamp_step}")
+        logging.info(f"{self.timestamp_min} + {self.slider_min.val * timestamp_step}")
+        logging.info(f"{self.timestamp_min} + {self.slider_max.val * timestamp_step}")
+        min_timestamp = self.timestamp_min + self.slider_min.val * timestamp_step
+        max_timestamp = self.timestamp_min + self.slider_max.val * timestamp_step
+        logging.info(f"Calculated min:[{min_timestamp}] and max:[{max_timestamp}] ")
+        all_time = []
+        for timestamp, line, alpha in self.line_cache:
+            line: Line2D
+            all_time.append(timestamp)
+
+            if timestamp > max_timestamp or timestamp < min_timestamp:
+                line.set_alpha(0)
             else:
-                current_alpha = line_cache[line_key].get_alpha()
-                line_cache[line_key].set_alpha(current_alpha + line.alpha)
+                line.set_alpha(alpha)
+
+            # logging.info(f"timestamp:{all_time}")
+        self.fig.canvas.draw_idle()
 
     @staticmethod
     def get_bar_received(history: List[GenericMessageReceivedReport]):
@@ -116,6 +153,7 @@ class Plot:
             if only_first and not entry.accepted:
                 continue
             out.append(Line(
+                entry.timestamp,
                 [entry.source_position.x, entry.target_position.x],
                 [entry.source_position.y, entry.target_position.y]
             ))

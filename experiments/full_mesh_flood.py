@@ -6,13 +6,12 @@
 """
 import logging
 import random
-import time
 from datetime import datetime
 
 from mesh.network import Network
-from mesh.network_monitor import dump_history
-from mesh.node import MeshNodeAsync
-from mesh.node_implementation import NodeWithPositionCache
+from mesh.common import dump_history
+from mesh.node.base import MeshNodeAsync
+from mesh.node.with_cache import NodeWithPositionCache
 from utils.space import Position
 from view.plot import Plot, MeshPlotMode
 

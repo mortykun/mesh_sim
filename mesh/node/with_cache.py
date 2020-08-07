@@ -1,11 +1,10 @@
 import asyncio
-from abc import ABC
 from collections import defaultdict
 from time import time
 from typing import List, Tuple, Optional
 
 from mesh.message import GenericMessageEvent, GenericMessageOutgoingEvent, NetworkPDU
-from mesh.node import MeshNodeAsync
+from mesh.node.base import MeshNodeAsync
 from utils.space import Position
 
 
